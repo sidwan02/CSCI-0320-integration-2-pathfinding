@@ -9,7 +9,6 @@ import edu.brown.cs.ta.pathfinding.GraticuleEdge;
 import edu.brown.cs.ta.pathfinding.GraticuleNode;
 import edu.brown.cs.ta.pathfinding.HeuristicFuncs;
 import edu.brown.cs.ta.main.ErrorMessages;
-import edu.brown.cs.ta.pathfinding.LPAStar;
 import edu.brown.cs.ta.utils.Utils;
 
 import java.awt.geom.IllegalPathStateException;
@@ -201,19 +200,12 @@ public final class RouteCommandsHandler {
       GraticuleNode start = getTargetPathNode(street1, crossStreet1);
       GraticuleNode end = getTargetPathNode(street2, crossStreet2);
 
-//      DijkstraAStar<String, String, GraticuleNode> lazyDijk
-//          = new DijkstraAStar<>(
-//          NodeDistanceCalculators::getHaversineDistance,
-//          MapCommandHandler.getdBProxiedReader()::get,
-//          HeuristicFuncs::aStarDist);
-//      return parseFunc.apply(lazyDijk.runDijkstraAStar(start, end), start, end);
-
-      LPAStar<String, String, GraticuleNode> lpaStar
-        = new LPAStar<>(
-        NodeDistanceCalculators::getHaversineDistance,
-        MapCommandHandler.getdBProxiedReader()::get,
-        HeuristicFuncs::aStarDist);
-      return parseFunc.apply(lpaStar.runLPAStar(start, end), start, end);
+      DijkstraAStar<String, String, GraticuleNode> aStar
+          = new DijkstraAStar<>(
+          NodeDistanceCalculators::getHaversineDistance,
+          MapCommandHandler.getdBProxiedReader()::get,
+          HeuristicFuncs::aStarDist);
+      return parseFunc.apply(aStar.runDijkstraAStar(start, end), start, end);
 
     } catch (IllegalPathStateException e) {
       return ErrorMessages.PATHS_NON_INTERSECTION;
@@ -236,19 +228,13 @@ public final class RouteCommandsHandler {
       GraticuleNode start = getTargetPathNode(lat1, lon1);
       GraticuleNode end = getTargetPathNode(lat2, lon2);
 
-//      DijkstraAStar<String, String, GraticuleNode> lazyDijk
-//          = new DijkstraAStar<>(
-//              NodeDistanceCalculators::getHaversineDistance,
-//              MapCommandHandler.getdBProxiedReader()::get,
-//              HeuristicFuncs::aStarDist);
-//      return parseFunc.apply(lazyDijk.runDijkstraAStar(start, end), start, end);
+      DijkstraAStar<String, String, GraticuleNode> aStar
+          = new DijkstraAStar<>(
+              NodeDistanceCalculators::getHaversineDistance,
+              MapCommandHandler.getdBProxiedReader()::get,
+              HeuristicFuncs::aStarDist);
+      return parseFunc.apply(aStar.runDijkstraAStar(start, end), start, end);
 
-      LPAStar<String, String, GraticuleNode> lpaStar
-        = new LPAStar<>(
-        NodeDistanceCalculators::getHaversineDistance,
-        MapCommandHandler.getdBProxiedReader()::get,
-        HeuristicFuncs::aStarDist);
-      return parseFunc.apply(lpaStar.runLPAStar(start, end), start, end);
     } catch (NullPointerException e) {
       return ErrorMessages.NO_DATABASE_LOADED;
     }

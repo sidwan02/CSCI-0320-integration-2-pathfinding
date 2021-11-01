@@ -16,7 +16,6 @@ import edu.brown.cs.ta.commandHandlers.pathfinding.NearestCommandHandler;
 import edu.brown.cs.ta.commandHandlers.pathfinding.RouteCommandsHandler;
 import edu.brown.cs.ta.commandHandlers.pathfinding.WaysCommandHandler;
 import edu.brown.cs.ta.repl.Repl;
-import edu.brown.cs.ta.obstacle.ObstacleThread;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
 import spark.ExceptionHandler;
@@ -60,15 +59,6 @@ public final class Main {
     .defaultsTo(DEFAULT_PORT);
     OptionSet options = parser.parse(args);
 
-     if (options.has("o")) {
-      // Initialize obstacle thread connection
-      ObstacleThread obstacleThread = new ObstacleThread();
-      obstacleThread.start();
-
-      ObstacleObjectPersistence.setObstacleObj(obstacleThread);
-
-      runSparkServer((int) options.valueOf("port"));
-    }
 
     // create a map of valid commands and command handler methods
     Map<String, BiFunction<String, String, String>> validCommands = new HashMap<>() {
