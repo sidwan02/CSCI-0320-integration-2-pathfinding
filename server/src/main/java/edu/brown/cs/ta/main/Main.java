@@ -11,18 +11,12 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.BiFunction;
 
-import edu.brown.cs.ta.checkin.CheckinThread;
-import edu.brown.cs.ta.commandHandlers.gui.MapsGuiHandler;
-import edu.brown.cs.ta.commandHandlers.gui.StarsGuiHandler;
 import edu.brown.cs.ta.commandHandlers.pathfinding.MapCommandHandler;
 import edu.brown.cs.ta.commandHandlers.pathfinding.NearestCommandHandler;
 import edu.brown.cs.ta.commandHandlers.pathfinding.ObstacleObjectPersistence;
 import edu.brown.cs.ta.commandHandlers.pathfinding.RouteCommandsHandler;
 import edu.brown.cs.ta.commandHandlers.pathfinding.WaysCommandHandler;
 import edu.brown.cs.ta.repl.Repl;
-import edu.brown.cs.ta.commandHandlers.stars.KdTreeCommandsHandler;
-import edu.brown.cs.ta.commandHandlers.stars.NaiveCommandsHandler;
-import edu.brown.cs.ta.commandHandlers.stars.StarsCommandHandler;
 import edu.brown.cs.ta.obstacle.ObstacleThread;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
@@ -62,20 +56,12 @@ public final class Main {
   private void run() {
     // Parse command line arguments
     OptionParser parser = new OptionParser();
-    parser.accepts("c");
     parser.accepts("o");
     parser.accepts("port").withRequiredArg().ofType(Integer.class)
     .defaultsTo(DEFAULT_PORT);
     OptionSet options = parser.parse(args);
 
-    if (options.has("c")) {
-      CheckinThread checkinThread = new CheckinThread();
-      checkinThread.start();
-
-      CheckinObjectPersistence.setCheckinObj(checkinThread);
-
-      runSparkServer((int) options.valueOf("port"));
-    } else if (options.has("o")) {
+     if (options.has("o")) {
       // Initialize obstacle thread connection
       ObstacleThread obstacleThread = new ObstacleThread();
       obstacleThread.start();
@@ -88,16 +74,10 @@ public final class Main {
     // create a map of valid commands and command handler methods
     Map<String, BiFunction<String, String, String>> validCommands = new HashMap<>() {
       {
-        put("stars", StarsCommandHandler::starsCommand);
-        put("naive_neighbors", NaiveCommandsHandler::naiveNeighborsCommand);
-        put("naive_radius", NaiveCommandsHandler::naiveRadiusCommand);
-        put("neighbors", KdTreeCommandsHandler::neighborsCommand);
-        put("radius", KdTreeCommandsHandler::radiusCommand);
         put("map", MapCommandHandler::mapCommand);
         put("ways", WaysCommandHandler::waysCommand);
         put("nearest", NearestCommandHandler::nearestCommand);
         put("route", RouteCommandsHandler::routeCommand);
-        put("delete", DeleteCommandHandler::deleteCommand);
       }
     };
 
@@ -120,21 +100,6 @@ public final class Main {
     }
     return new FreeMarkerEngine(config);
   }
-
-//  private void runSparkServer(int port) {
-//    Spark.port(port);
-//    Spark.externalStaticFileLocation("src/main/resources/static");
-//    Spark.exception(Exception.class, new ExceptionPrinter());
-//
-//    FreeMarkerEngine freeMarker = createEngine();
-//
-//    // Setup Spark Routes
-//    Spark.get("/stars", new StarsGuiHandler.FrontHandler(), freeMarker);
-//    // get user input
-//    Spark.post("/csvLoaded", new StarsGuiHandler.SubmitHandlerCsv(), freeMarker);
-//    Spark.post("/results", new StarsGuiHandler.SubmitHandlerCommand(), freeMarker);
-//    Spark.post("/stars", new StarsGuiHandler.SubmitHandlerStars(), freeMarker);
-//  }
 
   private void runSparkServer(int port) {
 
@@ -161,15 +126,10 @@ public final class Main {
 
     FreeMarkerEngine freeMarker = createEngine();
 
-    // Setup Spark Routes
-    Spark.get("/stars", new StarsGuiHandler.FrontHandler(), freeMarker);
-    // get user input
-    Spark.post("/csvLoaded", new StarsGuiHandler.SubmitHandlerCsv(), freeMarker);
-    Spark.post("/results", new StarsGuiHandler.SubmitHandlerCommand(), freeMarker);
-    Spark.post("/stars", new StarsGuiHandler.SubmitHandlerStars(), freeMarker);
-
-    Spark.post("/route", new MapsGuiHandler.RouteHandler());
-    Spark.post("/checkin", new MapsGuiHandler.CheckinHandler());
+    // TODO: Setup Spark Routes
+    // Example Spark Route where /route is the subpage and MapsGuiHandler is a class
+    // containing the RouteHandler method
+    // Spark.post("/route", new MapsGuiHandler.RouteHandler());
   }
 
   /**
