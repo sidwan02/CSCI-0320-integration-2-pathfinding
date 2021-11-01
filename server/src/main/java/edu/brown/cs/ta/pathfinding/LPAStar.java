@@ -1,7 +1,6 @@
 package edu.brown.cs.ta.pathfinding;
 
 import edu.brown.cs.ta.commandHandlers.pathfinding.NearestCommandHandler;
-import edu.brown.cs.ta.commandHandlers.pathfinding.ObstacleObjectPersistence;
 import edu.brown.cs.ta.obstacle.Obstacle;
 import edu.brown.cs.ta.utils.Utils;
 

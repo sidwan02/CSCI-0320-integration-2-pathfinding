@@ -1,6 +1,6 @@
 # README
 
-## Maps 3+4
+## Pathfinding
 
 ### Structural Organization
 
@@ -19,10 +19,6 @@
 #### searchAlgorithms
 
 **ListNaiveSearch**: This class allows running the naive neighbors and radius search algorithms to return appropriate indices according to the passed constraints.
-
-#### csv
-
-**Csv**: This class is called by the stars handler method in StarsCollection, and the mock handler method in MockCollection to load data from a CSV.
 
 #### database
 
@@ -60,30 +56,11 @@
 
 #### utils
 
-**Utils**: Class containing any generic methods applicable beyond the Stars Assignment.
-
-#### stars
-
-**Star**: Class that represents all properties of every star (ID, name, etc).
-
-**SearchAlgoPropertyBasedTesting**: Class that performs Model Based Testing to ensure that the result of the naive and kdTree commands/implementations match for randomly generated command inputs on 3D positioned stars.
-
-#### checkin
-
-**CheckinThread**: Thread runs continuously once started in main, querying for user checkin data from the checkin server.
-
-**UserCheckin**: Used to store a UserCheckin datapoint consisting of a unique id, name, timestamp, latitude and longitude.
+**Utils**: Class containing any generic methods applicable beyond the Pathfinding Assignment.
 
 #### commandHandlers
 
-#### gui
-
-**StarGuiHandler**: This class contains all handlers of the stars GUI and communicates between the UI and the star search algorithms
-
-**MapsGuiHandler**: This class contains all handlers of the maps GUI and communicates between the UI and the map algorithms
-
-#### maps
-
+#### pathfinding
 **MapCommandHandler**: This class handles the map command.
 
 **NearestCommandHandler**: This class handles the nearest command.
@@ -99,85 +76,6 @@
 **NodeDistanceCalculators**: This class contains the method using which distances between nodes are calculated.
 
 **DeleteCommandHandler**: This class handles the delete command created to assist in deleting all of a particular user's data from the SQL Checkin table.
-
-**CheckinObjectPersistence** This class is used to store a reference to the currently running CheckinThread to allow access to this across the program.
-
-#### stars
-
-**StarsCommandHandler**: This class handles the stars command.
-
-**NaiveCommandsHandler**: This class handles the naive_neighbors and naive_radius commands.
-
-**KdTreeCommandsHandler**: This class handles the neighbors and radius commands.
-
-**StarsResultParsers**: This class contains all methods required for parsing Lists of Coordinates to either the REPL or the GUI.
-
-### Partner Maps Contributions
-
-psekhsar provided the Dijkstra/A* implementation. We used this implementation since it was cleaner and the algorithm seemed more intuitive to us. We were able to integrate this within the framework of sdiwan2's overall code by changing certain function names and interfaces, as well as modifying the algorithm slightly to work with the heuristic functionality in sidwan2's code. Additionally, we added the common ErrorMessages class functionality from psekhsar's code which involved abstracting out error messages from the entire code and integrating all of them with a single, consistent place to add and modify these messages.
-
-sdiwan2 provided the REPL structure. We found this REPL implementation with functional interfaces to be cleaner and more intuitive, and different components of the program seemed to fit together better. We also found it easier to use the remaining functionality of the codebase that provided the REPL. And so we used sdiwan2's code as the base and integrated psekhsar's Dijkstra implementation into it,  maintaining the whole command handler set-up from sdiwan2's code.
-
-### Partner Maps Division of Labor
-
-Please note that these indicate 'work done mostly by', and not 'work done only by'
-
-**psekhsar**
-1. Merging code bases and system tests
-2. Integrating an error class
-3. SQL for maps 4
-4. Frontend caching ways
-5. Checkin GUI
-
-**sdiwan2**
-1. Canvas display
-2. Panning/zooming
-3. Adding delete functionality
-4. Route display
-5. Backend GUI handler class
-
-### Design Details
-
-#### Frontend
-
-We have maintained a distinction between the canvas bounds and the grid bounds. Canvas bounds represent the latitude and longitude boundaries of the top, left, bottom and right most edges of the canvas that may be displayed. On the other hand, gridbounds have a fixed hyperparametrized size of 0.008 lat/lon distance and serve as gridboxes for requesting ways from the backend or cache whenever necessary.
-
-When attempting to get an intersection by clicking on the map, if the user attempts to click on a node that is untraversable or that lies at the intersection of a street with empty name, then an error will populate at the top of the page. We do not allow for clicking untraversable nodes because the user will never be able to find paths to that node. And, we do not allow clicking of a node at the intersection of a street with empty/no name because route names may not be unique, especially not the empty name, which could imply that getting a route with that coordinate could choose some other street with empty name somewhere different from where the user intends.
-
-We have implemented the following functionality in the frontend in addition to minimum functionality:
-
-1. Latitude/longitude inputs
-
-Please note that we have hidden this div within the route.js file in our maps react app src folder because otherwise scrolling on the map would
-have caused scrolling down the page. We encourage the TA to show the div. You may find appropriate instructions
-at the bottom of the route.js file within the return block on how to show this div.
-
-2. Coloring of road types
-
-3. Legend of road types
-
-This legend is not hardcoded, but instead maps over a dict that we have created within the route.js file. You will notice that some dicts in the
-route.js file have some route names commented out. This is because any future developers may choose to add them to the dict and see their colors
-populate appropriately if they choose to do so.
-
-4. Start/end note highlighting
-
-When the user clicks on the map to get an intersection point, they will see valid intersections highlighted either blue or green.   
-
-5. Display of start/end node intersecting streets
-
-When the user clicks on the map to get an intersection point, they will see the corresponding street intersections populate in the route input
-boxes. We have implemented this by adding additional functionality in the backend that queries the loaded DB to find intersecting streets given
-a node.
-
-6. Loading state
-
-When a map is loading or state is updating, a loader will populate that gives the user confidence that the app has not crashed :-) and has registered
-their request.
-
-7. Road name dynamic display
-
-Different zoom levels will dynamically populate different road types depending on how long each road is in pixels. The road names are also populated in the direction of the road to minimize confusion about which name is for which street.
 
 #### Backend
 
@@ -206,7 +104,7 @@ While testing the app, we also noticed that panning or zooming into unknown area
 
 ### How to Run System Tests
 
-We have included all System Tests within this directory: _server/tests/student/
+We have included all System Tests within this directory: _server/tests/ta/
 
 1. Git bash at the root directory of the project
 2. Direct into the server directory (cd server)
@@ -216,73 +114,30 @@ We have included all System Tests within this directory: _server/tests/student/
 
 ###### map:
 
-./cs32-test tests/student/maps/map/errors/*.test
+./cs32-test tests/ta/pathfinding/map/errors/*.test
 
-./cs32-test tests/student/maps/map/valid/*.test
+./cs32-test tests/ta/pathfinding/map/valid/*.test
 
 ###### nearest:
 
-./cs32-test tests/student/maps/nearest/errors/*.test
+./cs32-test tests/ta/pathfinding/nearest/errors/*.test
 
-./cs32-test tests/student/maps/nearest/valid/*.test
+./cs32-test tests/ta/pathfinding/nearest/valid/*.test
 
 ###### route:
 
-./cs32-test tests/student/maps/route/byLocValid/*.test
+./cs32-test tests/ta/pathfinding/route/byLocValid/*.test
 
-./cs32-test tests/student/maps/route/byNameValid/*.test
+./cs32-test tests/ta/pathfinding/route/byNameValid/*.test
 
-./cs32-test tests/student/maps/route/errors/*.test
+./cs32-test tests/ta/pathfinding/route/errors/*.test
 
 ###### ways
 
-./cs32-test tests/student/maps/ways/valid/*.test
+./cs32-test tests/ta/pathfinding/ways/valid/*.test
 
-./cs32-test tests/student/maps/ways/errors/*.test
+./cs32-test tests/ta/pathfinding/ways/errors/*.test
 
-#### Repl:
-
-python cs32-test tests/student/stars/stars1/Repl/errors/*test
-
-#### StarsCollection:
-
-###### stars:
-
-python cs32-test tests/student/stars/stars1/StarsCollection/stars/errors/*test
-
-python cs32-test tests/student/stars/stars1/StarsCollection/stars/valid/*test
-
-###### naive_neighbors:
-
-python cs32-test tests/student/stars/stars1/StarsCollection/naive_neighbors/3_args/*test
-
-python cs32-test tests/student/stars/stars1/StarsCollection/naive_neighbors/5_args/*test
-
-python cs32-test tests/student/stars/stars1/StarsCollection/naive_neighbors/errors/*test
-
-###### naive_radius:
-
-python cs32-test tests/student/stars/stars1/StarsCollection/naive_radius/3_args/*test
-
-python cs32-test tests/student/stars/stars1/StarsCollection/naive_radius/5_args/*test
-
-python cs32-test tests/student/stars/stars1/StarsCollection/naive_radius/errors/*test
-
-##### neighbors:
-
-python cs32-test tests/student/stars/stars2/StarsCollection/neighbors/3_args/*test
-
-python cs32-test tests/student/stars/stars2/StarsCollection/neighbors/5_args/*test
-
-python cs32-test tests/student/stars/stars2/StarsCollection/neighbors/errors/*test
-
-##### radius:
-
-python cs32-test tests/student/stars/stars2/StarsCollection/radius/3_args/*test
-
-python cs32-test tests/student/stars/stars2/StarsCollection/radius/5_args/*test
-
-python cs32-test tests/student/stars/stars2/StarsCollection/radius/errors/*test
 
 ### How to Run and compile the Code
 
@@ -292,19 +147,6 @@ python cs32-test tests/student/stars/stars2/StarsCollection/radius/errors/*test
 3. Type mvn package
 4. Type ./run and hit enter
 5. And... that's it :)
-
-#### With GUI:
-1. Direct into the server directory (cd server) and run:
-
-    If you want to use python 2:
-
-    python cs032_maps_location_tracking 8080 1000000 (python cs032_maps_location_tracking 8080 1000000 -s if you want to use the small map)
-
-    If you want to use python 3:
-
-    python3 cs032_maps_location_tracking_py3 8080 1000000 (python cs032_maps_location_tracking_py3 8080 1000000 -s if you want to use the small map)
-2. In a new terminal, follow the instructions in the previous section titled Without GUI (in step 4 of Without GUI type ./run --gui instead)
-3. In a new terminal, direct into the maps directory (cd maps) of the project and type npm start
 
 ### Notes on JUnit Tests
 

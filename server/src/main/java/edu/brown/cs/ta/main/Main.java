@@ -13,7 +13,6 @@ import java.util.function.BiFunction;
 
 import edu.brown.cs.ta.commandHandlers.pathfinding.MapCommandHandler;
 import edu.brown.cs.ta.commandHandlers.pathfinding.NearestCommandHandler;
-import edu.brown.cs.ta.commandHandlers.pathfinding.ObstacleObjectPersistence;
 import edu.brown.cs.ta.commandHandlers.pathfinding.RouteCommandsHandler;
 import edu.brown.cs.ta.commandHandlers.pathfinding.WaysCommandHandler;
 import edu.brown.cs.ta.repl.Repl;
