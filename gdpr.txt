@@ -1,0 +1,28 @@
+==================
+GDPR requires that you specify exactly what you intend to do with each data point. Consider each data point that you’re gathering from your users (Name, location, timestamp). Writing to a user, justify why each data point is needed in an imaginary final version of your application: what eventual functionality might use the data?
+==================
+
+In thinking about this, we imagined a final version of our application where a closed group of users could share their locations with each other. Here, friends and family could form a small group and periodically share their location when they check into different places. Using this data, you could form a route of where different people have been along with what time they were there, and users can use this data to check up on people in case of emergency etc. In this final version, every user would have to consent to every other user being included in the group, and so any data will only be shared with people you have explicitly consented to it being shared with. 
+
+With this backdrop, we would justify each data point as:
+
+Name: This would be a non-unique identifier provided by the user themselves. We would store this to allow other users in their closed group to be able to identify their information.
+
+Location: This would only be stored when the user consented to their current location being used as a check-in. We would store this to allow users in their closed group to know where they have been, if the user wants them to have this information.
+
+Timestamp: This would complement a location data point, and would be stored to make the location information more meaningful. Rather than just knowing where users have been, it would be more meaningful for people in a user's closed group to know at what time they have visited these places, so as to be able to make better judgements in case they need to use the location information in case of an emergency etc.
+
+Note: A user would at any point be able to request to delete all of their data, and would at any point be able to withdraw consent and remove any user from their closed group.
+
+==================
+Consider a more complex application that you’ve interacted with before (Facebook, Steam, MyAnimeList) - why might it be difficult to delete all of the data on a user? Consider factors unique to the application you've chosen; specifically those other than volume or size of data.
+==================
+
+We thought of this question in context of Facebook. Our discussion specifically focused on the following difficulties with deleting all of a users data: 
+
+-- Facebook uses aggregate user data to form correlations and patterns which they then use to inform decisions. If a particular user's data was to be deleted, how would this affect the correlations and patterns that Facebook made using this data? And if they already used insights based on this data to inform decisions, how would they retroactively change these decisions?
+
+-- Data in Facebook is very interlinked between users. Let's imagine a situation where a user comments on a particular post, and then different users reply to their comment. If the original commenter deleted their data, what would happen to the the subsequent replies? Without the context of the original comment, these replies might be misrepresented, but at the same time Facebook would not have broad consent to delete all of these other users' replies. Similarly, if someone posts a piece of content, people can comment on it as well as share it, and then people can re-share the shared piece of content and then comment on that. If the original poster deletes their data, what would happen to all the subsequent re-shares and comments?
+
+-- With private messages and group chats, if a particular user deletes their data would all the messages they sent in these private conversations be deleted? In context of a group chat, it'll be hard to identify which messages were sent in explicit reply to the deleted user's messages. And so, if Facebook even tried to delete/put a warning next to all messages that were replies to a deleted user's messages, how would they identify which messages met this criteria?
+

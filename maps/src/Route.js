@@ -1,0 +1,1353 @@
+import './App.css';
+import './Route.css';
+
+import React, {useState} from 'react';
+
+import TextBox from "./TextBox";
+import CanvasLegend from "./CanvasLegend";
+
+
+import {AwesomeButton} from "react-awesome-button";
+import "react-awesome-button/dist/styles.css";
+
+import loading from './loading.gif';
+
+import './Canvas.css';
+
+import axios from 'axios';
+
+// canvas objects
+let canvas;
+let ctx;
+
+// represents the bounds against which to query for ways
+// these bounds are boundaries over the canvas that are divisible by ?????
+let gridBottom = null
+let gridTop = null
+let gridLeft = null
+let gridRight = null
+
+// represents the bounds of the canvas
+let canvasTop = 41.831;
+let canvasRight = -71.395;
+let canvasBottom = 41.820;
+let canvasLeft = -71.41;
+
+// counter used to determine when to display and hide the loader
+let queuedActions = 0;
+
+// store whether the map click input button for either start or end node
+// have been toggled
+let routeStartBtnClickState = false
+let routeEndBtnClickState = false
+
+// stores state of whether connected to valid DB
+let isDBLoaded = false
+
+// stores the most recently loaded route for persistent display upon pan/zoom
+let curRoute = [[]];
+
+// stores the intersection locations of the start and end nodes from user clicking on
+// the map in latitude/longitudes
+let startLatClick;
+let startLonClick;
+let endLatClick;
+let endLonClick;
+
+// stores new checkin data obtained from checkin data
+let checkinData = []
+
+// gets the route logs of the user clicked on in the checkin log
+let currentCheckinData
+
+// general constants
+const boundingBoxDim = 0.008
+const offsetScaler = 0.00001
+const scalingScaler = 0.000001
+
+// panning constants
+let dragStatus = false
+let prevX = null;
+let prevY = null;
+const dragDelay = 0;
+let curDragDelay = 0;
+
+// ways maps
+let waysToDisplayNames = {
+    "" : false,
+    "unclassified" : false,
+    "primary" : true,
+    "secondary" : true,
+    "tertiary" : true,
+    "residential" : true,
+    // "service" : "",
+    // "track" : "",
+    // "trunk" : "",
+    // "secondary_link" : "",
+    // "trunk_link" : "",
+    // "path" : "",
+    // "motorway_link" : "",
+    // "motorway" : "",
+    // "cycleway" : "",
+    // "tertiary_link" : "",
+    // "footway" : "",
+    // "primary_link" : "",
+    // "pedestrian" : "",
+    // "steps" : "",
+    // "construction" : "",
+    // "living_street" : "",
+    // "road" : "",
+}
+
+let waysToDisplay = {
+    "" : true,
+    "unclassified" : true,
+    "primary" : true,
+    "secondary" : true,
+    "tertiary" : true,
+    "residential" : true,
+    // "service" : "",
+    // "track" : "",
+    // "trunk" : "",
+    // "secondary_link" : "",
+    // "trunk_link" : "",
+    // "path" : "",
+    // "motorway_link" : "",
+    // "motorway" : "",
+    // "cycleway" : "",
+    // "tertiary_link" : "",
+    // "footway" : "",
+    // "primary_link" : "",
+    // "pedestrian" : "",
+    // "steps" : "",
+    // "construction" : "",
+    // "living_street" : "",
+    // "road" : "",
+}
+
+let wayColorMap = {
+    "" : "rgb(150,150,150)",
+    "unclassified" : "rgb(150,150,150)",
+    "primary" : "rgb(255,225,0)",
+    "secondary" : "rgb(0,56,255)",
+    "tertiary" : "rgb(255,0,0)",
+    "residential" : "rgb(56,255,0)",
+    // "service" : "",
+    // "track" : "",
+    // "trunk" : "",
+    // "secondary_link" : "",
+    // "trunk_link" : "",
+    // "path" : "",
+    // "motorway_link" : "",
+    // "motorway" : "",
+    // "cycleway" : "",
+    // "tertiary_link" : "",
+    // "footway" : "",
+    // "primary_link" : "",
+    // "pedestrian" : "",
+    // "steps" : "",
+    // "construction" : "",
+    // "living_street" : "",
+    // "road" : "",
+}
+
+// store the DB state
+let curDBState = "No Loaded DB"
+
+// cache of all gridbox bounds and ways
+let waysCache = {}
+
+// this is to ensure no requests are asked if they have already been asked
+// but haven't been filled into cache yet
+let alreadyAsked = {}
+
+function Route() {
+    // stores the currently loaded filename, or if it does not exist some dummy
+    // file which we assume could not exist
+    const [filename, setFilename] = useState("thisFileDoesNotExistHahahahahahahahahaha");
+
+    // stores the streets and cross streets for requesting a route command to
+    // be executed by the backend
+    const [street1, setStreet1] = useState("");
+    const [crossStreet1, setCrossStreet1] = useState("");
+    const [street2, setStreet2] = useState("");
+    const [crossStreet2, setCrossStreet2] = useState("");
+
+    // stores the lats and lons for requesting a route command to
+    // be executed by the backend
+    const [startLat, setStartLat] = useState("haha stringy hehe");
+    const [startLon, setStartLon] = useState("yes haha strong string");
+    const [endLat, setEndLat] = useState("ooo error go brr");
+    const [endLon, setEndLon] = useState("noice noice");
+
+    // stores the error message if generated by the backend
+    const [curError, setError] = useState("");
+
+    // stores the DB load state
+    const [curDBMsg, setDBMsg] = useState("No Loaded DB");
+
+    /**
+     * recurrently executes its contents every second
+     */
+    window.setInterval(() => {
+        // check if a DB has been connected to from the terminal
+        requestDbConnectionStatus()
+
+        if (isDBLoaded) {
+            // checks if there is new checkin data
+            refreshCheckinData()
+
+            let checkinDiv = document.getElementById("checkinLogDiv");
+
+            // loop over all new checkins and add them to the checkin log div
+            for (let checkinObj of checkinData) {
+                checkinDiv.innerHTML
+                    += `<div id="checkinSubDiv">
+                          ${checkinObj[1]} (${checkinObj[0]}) checked in ${checkinObj[2]} -> ${checkinObj[3]} at
+                          ${checkinObj[4]}
+                        </div>`;
+                document.getElementsByClassName("")
+            }
+
+            // reset the new checkin data to prevent re logging of past checkins
+            checkinData = []
+
+            // loop over all checkins to enable clicking to get user routes
+            for (let i = 0; i < checkinDiv.children.length; i++) {
+                let suggestionChild = checkinDiv.children[i];
+                suggestionChild.addEventListener('click', clickUserEvent)
+            }
+
+        }
+    }, 1000);
+
+    /**
+     * check if a DB has been loaded from the terminal
+     */
+    const requestDbConnectionStatus = () => {
+        const toSend = {
+            filename: "",
+            street1 : "",
+            crossStreet1 : "",
+            street2 : "",
+            crossStreet2 : "",
+            coordinateCmd : "connection",
+            lat1 : "",
+            lon1 : "",
+            lat2 : "",
+            lon2 : ""
+        };
+
+        let config = {
+            headers: {
+                "Content-Type": "application/json",
+                'Access-Control-Allow-Origin': '*',
+            }
+        }
+
+        axios.post(
+            "http://localhost:4567/route",
+            toSend,
+            config
+        )
+            .then(response => {
+                let connectionStatus = response.data["map"]
+                if (connectionStatus === "") {
+                    // no DB connected from terminal or from frontend
+                    setDBMsg("No Loaded DB")
+                    curDBState = "No Loaded DB"
+                    isDBLoaded = false
+                } else {
+                    // DB has been connected from terminal/frontend
+
+                    if (curDBState !== connectionStatus) {
+                        // connected to a new DB
+
+                        isDBLoaded = true
+                        setDBMsg(connectionStatus);
+                        curDBState = connectionStatus
+                        setError("")
+
+                        startLatClick = undefined;
+                        startLonClick = undefined;
+                        endLatClick = undefined;
+                        endLonClick = undefined;
+
+                        curRoute = [[]]
+
+                        // set the initial canvas bounds optimized for maps.sqlite3
+                        canvasTop = 41.831;
+                        canvasRight = -71.395;
+                        canvasBottom = 41.820;
+                        canvasLeft = -71.41;
+
+                        // clear the cached ways so that previous loaded DBs don't
+                        // interfere
+                        clearCachedWays()
+                        // clear the bounds requested for the previously loaded DB
+                        clearAlreadyAsked()
+                        // set the grid bounds and get ways within grid bounds
+                        updateGridBoundsAndGetWays()
+
+                    }
+                }
+            })
+
+            .catch(function (error) {
+                console.log(error);
+            });
+    }
+
+    /**
+     * request checkin data to get new checkins
+     */
+    const refreshCheckinData = () => {
+        const toSend = {
+            userId : "",
+            purpose : "refresh"
+        };
+
+        let config = {
+            headers: {
+                "Content-Type": "application/json",
+                'Access-Control-Allow-Origin': '*',
+            }
+        }
+
+        axios.post(
+            "http://localhost:4567/checkin",
+            toSend,
+            config
+        )
+            .then(response => {
+                let checkinResult = response.data["checkin"]
+                if (checkinResult !== {}) {
+                    // there are new checkins
+                    Object.entries(checkinResult).forEach(([_, value]) => {
+                        checkinData.push([value.id, value.name, value.lat, value.lon, value.ts])
+                    });
+                }
+
+            })
+
+            .catch(function (error) {
+                console.log(error);
+            });
+    }
+
+    /**
+     * called when clicking on a checkin data log
+     */
+    const clickUserEvent = (e) => {
+        let text = e.target.innerText
+
+        // extract the id and name of the user from the contents of the log
+        let id = text.substring(
+            text.lastIndexOf("(") + 1,
+            text.lastIndexOf(")")
+        );
+        let name = text.substring(
+            0,
+            text.indexOf(" ")
+        );
+
+        // get the route data of that user
+        requestCheckinUserData(id, name)
+    }
+
+    /**
+     * get the route data of the user from the backend
+     */
+    const requestCheckinUserData = (id, name) => {
+        const toSend = {
+            userId : id,
+            purpose : "click"
+        };
+
+        let config = {
+            headers: {
+                "Content-Type": "application/json",
+                'Access-Control-Allow-Origin': '*',
+            }
+        }
+
+        axios.post(
+            "http://localhost:4567/checkin",
+            toSend,
+            config
+        )
+            .then(response => {
+                currentCheckinData = response.data["current_user_data"]
+
+                // update the content of the user route div
+                let userRouteDiv = document.getElementById("userRouteDiv")
+                userRouteDiv.innerHTML = `${name} : ${id} Route History <br/> <br/>`
+
+                // iterate over all of the user's route checkins
+                for (let arr of currentCheckinData) {
+                    userRouteDiv.innerHTML += `<div>${arr[0]} -> <br/> ${arr[1]}</div> <br/> `
+                }
+            })
+
+            .catch(function (error) {
+                console.log(error);
+            });
+    }
+
+    /**
+     * called when the load btn is clicked and attempts to load the chosen file
+     */
+    const loadDB = () => {
+        // display the loader
+        toggleLoaderVisibilityOn()
+
+        const toSend = {
+            filename: filename,
+            street1 : "",
+            crossStreet1 : "",
+            street2 : "",
+            crossStreet2 : "",
+            coordinateCmd : "",
+            lat1 : null,
+            lon1 : null,
+            lat2 : null,
+            lon2 : null
+        };
+
+        let config = {
+            headers: {
+                "Content-Type": "application/json",
+                'Access-Control-Allow-Origin': '*',
+            }
+        }
+
+        axios.post(
+            "http://localhost:4567/route",
+            toSend,
+            config
+        )
+            .then(response => {
+                let mapResult = response.data["map"]
+                let errorResult = response.data["error"]
+
+                // hide the loader
+                toggleLoaderVisibilityOff()
+
+                if (errorResult !== "") {
+                    // invalid DB/file
+                    setError(errorResult)
+                } else if (mapResult !== []) {
+                    // valid DB
+                    isDBLoaded = true
+                    setDBMsg(mapResult);
+                    curDBState = mapResult
+                    setError("")
+
+                    startLatClick = undefined;
+                    startLonClick = undefined;
+                    endLatClick = undefined;
+                    endLonClick = undefined;
+
+                    curRoute = [[]]
+
+                    // set the initial canvas bounds optimized for maps.sqlite3
+                    canvasTop = 41.831;
+                    canvasRight = -71.395;
+                    canvasBottom = 41.820;
+                    canvasLeft = -71.41;
+
+                    // clear the cached ways so that previous loaded DBs don't
+                    // interfere
+                    clearCachedWays()
+                    // clear the bounds requested for the previously loaded DB
+                    clearAlreadyAsked()
+                    // set the grid bounds and get ways within grid bounds
+                    updateGridBoundsAndGetWays()
+                } else {
+                }
+            })
+
+            .catch(function (error) {
+                console.log(error);
+            });
+    }
+
+    /**
+     * show the loader
+     */
+    const toggleLoaderVisibilityOn = () => {
+        let loadingImg = document.getElementById("loadingImg")
+
+        loadingImg.hidden = false
+    }
+
+    /**
+     * hide the loader
+     */
+    const toggleLoaderVisibilityOff = () => {
+        let loadingImg = document.getElementById("loadingImg")
+
+        loadingImg.hidden = true
+    }
+
+    /**
+     * clear the cached ways
+     */
+    const clearCachedWays = () => {
+        waysCache = {}
+    }
+
+    /**
+     * clear the cached way requests
+     */
+    const clearAlreadyAsked = () => {
+        alreadyAsked = {}
+    }
+
+    /**
+     * update the grid bounds and get ways for all gridboxes within the grid bounds
+     */
+    const updateGridBoundsAndGetWays = () => {
+        // set the gridbounds based on the current canvas bounds while making
+        // sure they include those gridboxes that the canvas may partially display
+        gridLeft = canvasLeft > 0
+            ? Number(parseFloat((canvasLeft - (getRemainder(canvasLeft, boundingBoxDim) * boundingBoxDim)) + "").toPrecision(12))
+            : Number(parseFloat(((canvasLeft - ((1 - getRemainder(canvasLeft, boundingBoxDim)) * boundingBoxDim))) + "").toPrecision(12))
+        gridRight = canvasRight > 0
+            ? Number(parseFloat((canvasRight + ((1 - getRemainder(canvasRight, boundingBoxDim)) * boundingBoxDim)) + "").toPrecision(12))
+            : Number(parseFloat((canvasRight + ((getRemainder(canvasRight, boundingBoxDim)) * boundingBoxDim)) + "").toPrecision(12))
+        gridBottom = canvasBottom > 0
+            ? Number(parseFloat((canvasBottom - (getRemainder(canvasBottom, boundingBoxDim) * boundingBoxDim)) + "").toPrecision(12))
+            : Number(parseFloat(((canvasBottom - ((1 - getRemainder(canvasBottom, boundingBoxDim)) * boundingBoxDim))) + "").toPrecision(12))
+        gridTop = canvasTop > 0
+            ? Number(parseFloat((canvasTop + ((1 - getRemainder(canvasTop, boundingBoxDim)) * boundingBoxDim)) + "").toPrecision(12))
+            : Number(parseFloat((canvasTop + ((getRemainder(canvasTop, boundingBoxDim)) * boundingBoxDim)) + "").toPrecision(12))
+
+        // get a list of all longitude and latitude gridbox demarcations
+        let longitudeList = numListRangeInclusive(gridLeft, gridRight, boundingBoxDim).slice(0, -1)
+        let latitudeList = numListRangeInclusive(gridBottom, gridTop, boundingBoxDim).slice(0, -1)
+
+        // increment the queued actions to allow the loader to be shown
+        queuedActions += (longitudeList.length * latitudeList.length)
+
+        // show the loader
+        toggleLoaderVisibilityOn()
+
+        // clear the canvas
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // fetch ways data for each gridbox from left to right, bottom to top
+        // (in the direction of increasing latitude and longitude)
+
+        // also fetch data from gridboxes that are partially in the canvas
+        let lon2;
+        let lat1;
+        for (let lon1 of longitudeList) {
+            for (let lat2 of latitudeList) {
+                lon2 = Number(parseFloat((lon1 + boundingBoxDim) + "").toPrecision(12))
+                lat1 = Number(parseFloat((lat2 + boundingBoxDim) + "").toPrecision(12))
+
+                // get the ways from each bounding box
+                getWays(lat1, lon1, lat2, lon2)
+            }
+        }
+    }
+
+    /**
+     * get the remainder from a dividend and divisor making sure
+     * to make negative numbers positive
+     */
+        // this is being used instead of the JavaScript math library one because that
+        // one is funny and gave unexpected results
+    const getRemainder = (anyDividend, anyDivisor) => {
+            let dividend = anyDividend < 0 ? anyDividend * -1 : anyDividend
+            let divisor = anyDivisor < 0 ? anyDivisor * -1 : anyDivisor
+            let quotient = Number(parseFloat((dividend / divisor) + "").toFixed(10))
+            return Number(parseFloat((quotient - Math.floor(quotient)) + "").toFixed(10))
+        }
+
+    /**
+     * create a list of numbers from start to stop inclusive with increment of step
+     */
+    const numListRangeInclusive = (start, stop, step) => {
+        let list = []
+        let curVal = start
+        while (curVal <= stop) {
+            list.push(curVal)
+            curVal += step
+            curVal = Number(parseFloat((curVal) + "").toPrecision(12))
+
+        }
+        return list
+    }
+
+    /**
+     * Get ways from backend if not in cache, or ignore request if already asked
+     */
+    const getWays = (waysLat1, waysLon1, waysLat2, waysLon2) => {
+        let boundingConditions = [waysLat1, waysLon1, waysLat2, waysLon2]
+
+        let boundingString = waysLat1 + " " + waysLon1 +  " " + waysLat2 + " " + waysLon2
+        if (boundingConditions in waysCache) {
+            // ways in cache
+            queuedActions = queuedActions - 1
+
+            if (queuedActions === 0) {
+                toggleLoaderVisibilityOff()
+            }
+
+            // draw the ways corresponding to the given bounding conditions
+            drawWays(getCachedWays(boundingConditions))
+            // draw the route if applicable
+            drawRoute()
+            // draw any route start/end nodes if applicable
+            markIntersectionPoint()
+        } else if (boundingString in alreadyAsked) {
+            // ways already requested from backend (duplicate request is ignored)
+            // but not yet populated within cache
+            queuedActions = queuedActions - 1
+
+            if (queuedActions === 0) {
+                toggleLoaderVisibilityOff()
+            }
+
+        } else {
+            // ways must be requested from backend
+
+            // add this request to the asked requests map
+            addToAlreadyAsked(boundingString)
+
+            requestWaysFromBackend(waysLat1, waysLon1, waysLat2, waysLon2)
+        }
+    }
+
+    /**
+     * draw the ways for a given gridbox
+     */
+    const drawWays = (allWays) => {
+        ctx.lineWidth = 1;
+        ctx.font = '12px verdana';
+        ctx.textAlign='center';
+        ctx.textBaseline='middle';
+
+        let lat1
+        let lon1
+        let lat2
+        let lon2
+        let type
+        let colorFromMap
+        for (let way of allWays) {
+            type = way[2]
+            if (waysToDisplay[type]) {
+                ctx.beginPath();
+
+                // get the color from the color map
+                colorFromMap = wayColorMap[type];
+
+                if (colorFromMap === undefined) {
+                    // if the way type does not have a color code
+                    colorFromMap = "lightgrey"
+                }
+
+                ctx.strokeStyle = colorFromMap
+
+                // convert the lats and lons into pixels
+                lat1 = way[4]
+                lon1 = way[5]
+                lat2 = way[7]
+                lon2 = way[8]
+                let pixelXStart = (lon1 - canvasLeft) * (canvas.width / (canvasRight - canvasLeft))
+                let pixelYStart = (canvasTop - lat1) * (canvas.height / (canvasTop - canvasBottom))
+                let pixelXEnd = (lon2 - canvasLeft) * (canvas.width / (canvasRight - canvasLeft))
+                let pixelYEnd = (canvasTop - lat2) * (canvas.height / (canvasTop - canvasBottom))
+
+                ctx.moveTo(pixelXStart, pixelYStart);
+                ctx.lineTo(pixelXEnd, pixelYEnd);
+                ctx.stroke();
+
+                if (waysToDisplayNames[type] // the name of the street should be displayed
+                    // the way is long enough for the sake of clarity of reading street names
+                    && Math.max(Math.abs(pixelYEnd - pixelYStart), Math.abs((pixelXEnd - pixelXStart))) > 50) {
+
+                    // rotate the street name in the direction of the street
+                    ctx.translate((pixelXStart + pixelXEnd) / 2, (pixelYStart + pixelYEnd) / 2);
+                    ctx.rotate(Math.atan((pixelYEnd - pixelYStart) / (pixelXEnd - pixelXStart)));
+                    ctx.translate(-1 * (pixelXStart + pixelXEnd) / 2, -1 * (pixelYStart + pixelYEnd) / 2);
+
+                    ctx.fillText(way[1], (pixelXStart + pixelXEnd) / 2, (pixelYStart + pixelYEnd) / 2);
+
+                    // reset the canvas transform state to the initial state
+                    ctx.setTransform(1, 0, 0, 1, 0, 0);
+                }
+                ctx.closePath();
+            }
+        }
+    }
+
+    /**
+     * get ways of the passed gridbox bounds from cache
+     */
+    const getCachedWays = (boundingConditions) => {
+        return waysCache[boundingConditions]
+    }
+
+    /**
+     * draw the route if has been requested before/if it exists
+     */
+    const drawRoute = () => {
+        let route = curRoute
+
+        if (route[0].length === 6) {
+            // no path between start and end nodes
+            setError("ALERT: No Path")
+        } else if (route[0].length === 7) {
+            // path between start and end nodes exists
+            for (let way of route) {
+                ctx.beginPath()
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = 'rgba(25, 181, 254, 1)';
+
+                // convert lats and lons to pixels
+                let pixelXStart = (way[3] - canvasLeft) * (canvas.width / (canvasRight - canvasLeft))
+                let pixelYStart = (canvasTop - way[2]) * (canvas.height / (canvasTop - canvasBottom))
+                let pixelXEnd = (way[6] - canvasLeft) * (canvas.width / (canvasRight - canvasLeft))
+                let pixelYEnd = (canvasTop - way[5]) * (canvas.height / (canvasTop - canvasBottom))
+
+                ctx.moveTo(pixelXStart, pixelYStart)
+                ctx.lineTo(pixelXEnd, pixelYEnd);
+
+                ctx.stroke();
+                ctx.closePath();
+            }
+        }
+    }
+
+    /**
+     * mark the start/end nodes if they have been set before or if they
+     * are being set for the first time or are being changed
+     */
+    const markIntersectionPoint = () => {
+        if (startLatClick !== undefined || endLatClick !== undefined) {
+            // start or end node exists
+            let lats = [startLatClick, endLatClick]
+            let lons = [startLonClick, endLonClick]
+
+            let lat
+            let lon
+            let index = 0
+            while (index < lats.length) {
+                // index 0 -> start node; index 1 -> end node
+
+                // convert lat and lon to pixels
+                lat = lats[index]
+                lon = lons[index]
+                let pixelX = (lon - canvasLeft) * (canvas.width / (canvasRight - canvasLeft))
+                let pixelY = (canvasTop - lat) * (canvas.height / (canvasTop - canvasBottom))
+
+                let radius = 5;
+
+                ctx.beginPath();
+
+                ctx.arc(pixelX, pixelY, radius, 0, 2 * Math.PI);
+
+                if (index === 0) {
+                    // style for start node
+                    ctx.fillStyle = 'rgb(3,146,0)';
+                    ctx.strokeStyle = '#00e000';
+                } else if (index === 1) {
+                    // style for end node
+                    ctx.fillStyle = 'rgb(0,80,140)';
+                    ctx.strokeStyle = '#00a7b8';
+                }
+
+                ctx.fill();
+                ctx.lineWidth = 5;
+                ctx.stroke();
+                ctx.closePath();
+
+                index ++
+            }
+
+        }
+    }
+
+    /**
+     * add a current request to the cache of requested ways
+     */
+    const addToAlreadyAsked = (boundingConditions) => {
+        alreadyAsked[boundingConditions] = true
+    }
+
+    /**
+     * request ways with given lat and lon parameters from backend
+     */
+    const requestWaysFromBackend = (waysLat1, waysLon1, waysLat2, waysLon2) => {
+        let boundingConditions = [waysLat1, waysLon1, waysLat2, waysLon2]
+
+        const toSend = {
+            filename: "",
+            street1 : "",
+            crossStreet1 : "",
+            street2 : "",
+            crossStreet2 : "",
+            coordinateCmd : "ways",
+            lat1 : waysLat1,
+            lon1 : waysLon1,
+            lat2 : waysLat2,
+            lon2 : waysLon2
+        };
+
+        let config = {
+            headers: {
+                "Content-Type": "application/json",
+                'Access-Control-Allow-Origin': '*',
+            }
+        }
+
+        axios.post(
+            "http://localhost:4567/route",
+            toSend,
+            config
+        )
+            .then(response => {
+                let waysResult = response.data["ways"]
+                let errorResult = response.data["error"]
+
+                // decrement the queued actions
+                queuedActions = queuedActions - 1
+
+                if (queuedActions === 0) {
+                    // hide the loader
+                    toggleLoaderVisibilityOff()
+                }
+
+                if (errorResult !== "") {
+                    // error when executing the ways command
+                    setError(errorResult)
+                } else if (waysResult !== []) {
+                    // successful ways command execution
+                    setError("")
+                    // set the ways into cache
+                    setWaysIntoCache(boundingConditions, waysResult)
+
+                    drawWays(getCachedWays(boundingConditions))
+                    drawRoute()
+                    markIntersectionPoint()
+                } else {
+                }
+            })
+
+            .catch(function (error) {
+                console.log(error);
+            });
+    }
+
+    /**
+     * set the gridbox bounds and ways into cache
+     */
+    const setWaysIntoCache = (boundingConditions, val) => {
+        waysCache[boundingConditions] = val
+    }
+
+    /**
+     * Called when manual input btn for the start node is clicked to get intersection streets.
+     */
+    const mapClickStartNode = () => {
+        let btn1 = document.getElementsByClassName("toggleStreetSelect1")[0]
+
+        // toggle btn
+        if (routeStartBtnClickState === false) {
+            routeStartBtnClickState = true
+            btn1.style.backgroundColor = "green";
+            btn1.style.color = "#61dafb";
+            btn1.value = "Selecting From Map"
+        } else {
+            routeStartBtnClickState = false
+            btn1.style.backgroundColor = "";
+            btn1.style.color = "black";
+            btn1.value = "Manual Input"
+        }
+    }
+
+    /**
+     * Called when manual input btn for the end node is clicked to get intersection streets.
+     */
+    const mapClickEndNode = () => {
+        let btn2 = document.getElementsByClassName("toggleStreetSelect2")[0]
+
+        // toggle btn
+        if (routeEndBtnClickState === false) {
+            routeEndBtnClickState = true
+            btn2.style.backgroundColor = "green";
+            btn2.style.color = "#61dafb";
+            btn2.value = "Selecting From Map"
+        } else {
+            routeEndBtnClickState = false
+            btn2.style.backgroundColor = "";
+            btn2.style.color = "black";
+            btn2.value = "Manual Entry"
+        }
+    }
+
+    /**
+     * Called when route btn with street inputs is clicked to get route.
+     */
+    const requestStreetRoute = () => {
+        const toSend = {
+            filename: "",
+            street1 : street1,
+            crossStreet1 : crossStreet1,
+            street2 : street2,
+            crossStreet2 : crossStreet2,
+            coordinateCmd : "",
+            waysLat1 : null,
+            waysLon1 : null,
+            waysLat2 : null,
+            waysLon2 : null
+        };
+
+        let config = {
+            headers: {
+                "Content-Type": "application/json",
+                'Access-Control-Allow-Origin': '*',
+            }
+        }
+
+        axios.post(
+            "http://localhost:4567/route",
+            toSend,
+            config
+        )
+            .then(response => {
+                let routeResult = response.data["route"]
+                let errorResult = response.data["error"]
+
+                if (errorResult !== "") {
+                    // error when executing route cmd
+                    setError(errorResult)
+                } else if (routeResult !== []) {
+                    // successful route cmd execution
+                    curRoute = routeResult;
+                    setError("")
+
+                    // refresh canvas to get route to display
+                    updateGridBoundsAndGetWays()
+                } else {
+                }
+            })
+
+            .catch(function (error) {
+                console.log(error);
+            });
+    }
+
+    /**
+     * Called when route btn with lat lon inputs is clicked to get route.
+     */
+    const requestLatLonRoute = () => {
+        // setup()
+        const toSend = {
+            filename: "",
+            street1 : "",
+            crossStreet1 : "",
+            street2 : "",
+            crossStreet2 : "",
+            coordinateCmd : "route",
+            lat1 : startLat,
+            lon1 : startLon,
+            lat2 : endLat,
+            lon2 : endLon
+        };
+
+        let config = {
+            headers: {
+                "Content-Type": "application/json",
+                'Access-Control-Allow-Origin': '*',
+            }
+        }
+
+        axios.post(
+            "http://localhost:4567/route",
+            toSend,
+            config
+        )
+            .then(response => {
+                let routeResult = response.data["route"]
+                let errorResult = response.data["error"]
+                if (errorResult !== "") {
+                    // error when executing route cmd
+                    setError(errorResult)
+                } else if (routeResult !== []) {
+                    // successful route cmd execution
+                    setError("")
+                    curRoute = routeResult;
+
+                    // refresh canvas to get route to display
+                    updateGridBoundsAndGetWays()
+                } else {
+                }
+            })
+
+            .catch(function (error) {
+                console.log(error);
+            });
+    }
+
+    /**
+     * clear drawn route if it exists
+     */
+    const clearRoute = () => {
+        curRoute = [[]];
+
+        // refresh the canvas to no longer display the route
+        updateGridBoundsAndGetWays()
+    }
+
+    /**
+     * toggle the legend of way types and their colors
+     */
+    const toggleLegendVisibility = () => {
+        let legendTableDiv = document.getElementById("legendTableDiv")
+        legendTableDiv.hidden = !legendTableDiv.hidden;
+    }
+
+    /**
+     * on starting the app setup the canvas
+     */
+    window.onload = () => {
+        setup()
+    };
+
+    /**
+     * setup the canvas
+     */
+    const setup = () => {
+        canvas = document.getElementById("canvas");
+        ctx = canvas.getContext("2d");
+
+        // handle canvas click events
+        const getClickLocation = (event) => {
+            // convert the click pixels into lat and lon
+            let lon1 = event.offsetX * ((canvasRight - canvasLeft) / canvas.width) + canvasLeft
+            let lat1 = -1 * (event.offsetY * ((canvasTop - canvasBottom) / canvas.height) - canvasTop)
+
+            if (routeStartBtnClickState === true) {
+                requestIntersectionStreets(lat1, lon1, 0)
+            }
+            if (routeEndBtnClickState === true) {
+                requestIntersectionStreets(lat1, lon1, 1)
+            }
+        }
+
+        /**
+         * handle canvas mouse down events
+         */
+        const mouseDownCanvas = () => {
+            if (isDBLoaded === true) {
+                dragStatus = true
+            }
+        }
+
+        /**
+         * handle canvas mouse move events
+         */
+        const dragCanvas = (event) => {
+            if (isDBLoaded === true) {
+                if (dragStatus) {
+                    // if dragging
+                    if (prevX === null || prevY === null) {
+                        // this is the first dragged pixel
+                        // set the previous pixel locations to determine
+                        // direction of drag later
+                        prevX = event.clientX
+                        prevY = event.clientY
+                    } else {
+                        // this is not the first dragged pixel
+                        if (curDragDelay === dragDelay) {
+                            // drag delay constraint is met
+                            // (for staggered panning if choose to implement so)
+
+                            // shift canvas by horizontal and vertical drags
+                            offsetCanvasHorizontal(prevX - event.clientX)
+                            offsetCanvasVertical(event.clientY - prevY)
+
+                            // refresh the canvas with panned routes
+                            updateGridBoundsAndGetWays()
+
+                            prevX = event.clientX
+                            prevY = event.clientY
+                            curDragDelay = 0;
+                        } else {
+                            curDragDelay ++
+                        }
+                    }
+                }
+            }
+        }
+
+        /**
+         * handle canvas scroll events
+         */
+        const zoomCanvas = (event) => {
+            if (isDBLoaded === true) {
+                // check if zoom in or out
+                let scale = event.deltaY > 0 ? 1 : -1
+
+                let focusX = event.offsetX
+                let focusY = event.offsetY
+
+                // find canvas offset amounts based on mouse location during zoom
+                let canvasRightDist = (canvas.width - focusX < 0 ? 0 : canvas.width - focusX) * scale
+                let canvasLeftDist = focusX * scale
+                let canvasTopDist = focusY * scale
+                let canvasBottomDist = (canvas.height - focusY < 0 ? 0 : canvas.height - focusY) * scale
+
+                // scale canvas bounds by offset amounts
+                scaleCanvasBounds([canvasRightDist, canvasLeftDist, canvasTopDist, canvasBottomDist])
+
+                // refresh the canvas with zoomed routes
+                updateGridBoundsAndGetWays()
+            }
+        }
+
+        /**
+         * handle canvas mouse up events
+         */
+        const mouseUpCanvas = () => {
+            if (isDBLoaded === true) {
+                dragStatus = false
+                prevX = null
+                prevY = null
+            }
+        }
+
+        // canvas event listeners
+        canvas.addEventListener("click", getClickLocation);
+        canvas.addEventListener("mousedown", mouseDownCanvas);
+        canvas.addEventListener("mousemove", dragCanvas);
+        canvas.addEventListener("mouseup", mouseUpCanvas);
+        canvas.addEventListener("mousewheel", zoomCanvas);
+    }
+
+    /**
+     * call the nearest cmd from the backend to get the nearest traversable intersection's
+     * intersecting streets and intersection location
+     */
+    const requestIntersectionStreets = (lat1, lon1, btnIndex) => {
+        // btnIndex 0 -> start node; btnIndex 1 -> end node;
+        const toSend = {
+            filename: "",
+            street1 : "",
+            crossStreet1 : "",
+            street2 : "",
+            crossStreet2 : "",
+            coordinateCmd : "nearest",
+            lat1 : lat1,
+            lon1 : lon1,
+            lat2 : "",
+            lon2 : ""
+        };
+
+        let config = {
+            headers: {
+                "Content-Type": "application/json",
+                'Access-Control-Allow-Origin': '*',
+            }
+        }
+
+        axios.post(
+            "http://localhost:4567/route",
+            toSend,
+            config
+        )
+            .then(response => {
+                let streets = response.data["nearest"]
+                let errorResult = response.data["error"]
+
+                if (errorResult !== "") {
+                    // error while executing nearest cmd
+                    setError(errorResult)
+                } else if (streets !== []) {
+                    // successful nearest cmd execution
+                    if (streets[0] === "" || streets[1] === "") {
+                        // either street has empty name
+                        setError("ERROR: Intersection found with un-named street")
+                    } else {
+                        setError("")
+
+                        if (btnIndex === 0) {
+                            // set the streets of the start node
+                            let input1 = document.getElementById("street1")
+                            let input2 = document.getElementById("crossStreet1")
+
+                            setStreet1(streets[0])
+                            setCrossStreet1(streets[1])
+
+                            input1.value = streets[0]
+                            input2.value = streets[1]
+
+                            startLatClick = streets[2]
+                            startLonClick = streets[3]
+
+                            updateGridBoundsAndGetWays()
+                        } else if (btnIndex === 1) {
+                            // set the streets of the end node
+                            let input1 = document.getElementById("street2")
+                            let input2 = document.getElementById("crossStreet2")
+
+                            setStreet2(streets[0])
+                            setCrossStreet2(streets[1])
+
+                            input1.value = streets[0]
+                            input2.value = streets[1]
+
+                            endLatClick = streets[2]
+                            endLonClick = streets[3]
+
+                            updateGridBoundsAndGetWays()
+                        }
+                    }
+                } else {
+                }
+            })
+
+            .catch(function (error) {
+                console.log(error);
+            });
+    }
+
+    /**
+     * offset the canvas horizontally by the given offset
+     */
+    const offsetCanvasHorizontal = (offset) => {
+        let scaledOffset = offset * offsetScaler
+        canvasLeft = Number(parseFloat((canvasLeft + scaledOffset) + "").toPrecision(12))
+        canvasRight = Number(parseFloat((canvasRight + scaledOffset) + "").toPrecision(12))
+    }
+
+    /**
+     * offset the canvas vertically by the given offset
+     */
+    const offsetCanvasVertical = (offset) => {
+        let scaledOffset = offset * offsetScaler
+        canvasTop = Number(parseFloat((canvasTop + scaledOffset) + "").toPrecision(12))
+        canvasBottom = Number(parseFloat((canvasBottom + scaledOffset) + "").toPrecision(12))
+    }
+
+    /**
+     * offset the canvas bounds given by the stretching vector containing
+     * offsets for each direction
+     */
+    const scaleCanvasBounds = (stretchingVector) => {
+        canvasRight = Number(parseFloat((canvasRight - scalingScaler * stretchingVector[0]) + "").toPrecision(12))
+        canvasLeft = Number(parseFloat((canvasLeft + scalingScaler * stretchingVector[1]) + "").toPrecision(12))
+        canvasTop = Number(parseFloat((canvasTop - scalingScaler * stretchingVector[2]) + "").toPrecision(12))
+        canvasBottom = Number(parseFloat((canvasBottom + scalingScaler * stretchingVector[3]) + "").toPrecision(12))
+    }
+
+    return (
+        <div className="Route">
+            <header className="Route-header">
+                <img src={loading} height={"10px"} align={"center"} id={"loadingImg"} hidden={true}  alt={"Loading Gif"}/>
+
+                <br/>
+                {curError}
+                <br/>
+
+                <div id="loadDBDiv">
+                    {curDBMsg}
+                    <br/>
+                    <br/>
+                    <TextBox type="file" label={"Select DB"} change={setFilename} />
+                    <br/>
+                    <AwesomeButton type="primary" onPress={loadDB}>Load DB</AwesomeButton>
+                </div>
+
+                <br/>
+
+                <div id="routeStreetInputDiv">
+                    Street 1
+                    <br/>
+                    <input id={"street1"} type={"input"}/>
+                    <br/>
+                    Cross Street 1
+                    <br/>
+                    <input id={"crossStreet1"} type={"input"}/>
+                    <br/>
+                    <input value={"Manual Input"} className={"toggleStreetSelect1"} type="button" onClick={mapClickStartNode}/>
+
+                    Street 2
+                    <br/>
+                    <input id={"street2"} type={"input"}/>
+                    <br/>
+                    Cross Street 2
+                    <br/>
+                    <input id={"crossStreet2"} type={"input"}/>
+                    <input value={"Manual Input"} className={"toggleStreetSelect2"} type="button" onClick={mapClickEndNode} />
+                    <br/>
+                    <AwesomeButton type="primary" onPress={requestStreetRoute}>Get Route</AwesomeButton>
+                    <br/>
+
+                </div>
+
+                <br/>
+
+                {/*Note for the TA:
+                this div is being hidden only for the convenience that scrolling
+                on the map doesn't cause scrolling of the page
+
+                otherwise, we guarantee his works; to test it please replace
+                hidden={true} with hidden={false}*/}
+                <div id="routeLatLonInputDiv" hidden={true}>
+                    <TextBox type="number" label={"Start Latitude"} change={setStartLat} />
+                    <TextBox type="number" label={"Start Longitude"} change={setStartLon} />
+                    <TextBox type="number" label={"End Latitude"} change={setEndLat} />
+                    <TextBox type="number" label={"End Longitude"} change={setEndLon} />
+                    <br/>
+                    <AwesomeButton type="primary" onPress={requestLatLonRoute}>Get Route</AwesomeButton>
+                </div>
+
+
+                <AwesomeButton type="primary" onPress={clearRoute}>Clear Route</AwesomeButton>
+
+                <div id="legendDiv">
+                    <AwesomeButton id={"legendBtn"} onPress={toggleLegendVisibility} type="secondary">Map Legend</AwesomeButton>
+                    <br/>
+                    <div id="legendTableDiv" hidden={true}>
+                        <table width="100px" border="1">
+                            <tbody>
+                            <tr>
+                                <th>Route Type</th>
+                                <th>Color</th>
+                            </tr>
+
+                            {Object.entries(wayColorMap).map((kvPair) =>
+                                <tr>
+                                    <td>{kvPair[0]}</td>
+                                    <td>
+                                        <CanvasLegend color={kvPair[1]}/>
+                                    </td>
+                                </tr>
+                            )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="userRouteDiv">
+                    User Route
+                </div>
+
+                <div id="checkinDiv">
+                    Checkin Log
+                    <div id={"checkinLogDiv"}>
+                    </div>
+                </div>
+
+                <canvas id={"canvas"} width="720px" height="500px"/>
+            </header>
+        </div>
+    );
+}
+
+export default Route;

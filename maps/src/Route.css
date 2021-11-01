@@ -1,0 +1,88 @@
+html {
+  font-family: Segoe UI,Frutiger,Frutiger Linotype,Dejavu Sans,Helvetica Neue,Arial,sans-serif;
+  color: silver;
+}
+
+body {
+  background-color: black;
+}
+
+.center {
+  text-align: center;
+}
+
+button, input, select, textarea, form, h3 {
+  color: black;
+  font-family: Segoe UI,Frutiger,Frutiger Linotype,Dejavu Sans,Helvetica Neue,Arial,sans-serif;
+}
+
+h2 {
+  color: #ff0000;
+}
+
+textarea, text {
+  color: silver;
+}
+
+h1 {
+  color: silver;
+  text-align: center;
+}
+
+
+#text {
+  color: silver;
+}
+
+#errorDiv {
+  text-align: center;
+  border-radius: 5px;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+#loadDBDiv, #routeStreetInputDiv, #routeLatLonInputDiv, #checkinDiv, #userRouteDiv {
+  border-radius: 5px;
+  background-color: rgba(208, 208, 208, 0.5);
+  padding: 20px;
+  width: 200px;
+}
+
+#loadingImg {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  right: 40%;
+  top: 10px;
+  z-index: 1;
+}
+
+#checkinDiv {
+  position: absolute;
+  top: 35px;
+  right: 0px;
+}
+
+#checkinLogDiv {
+  overflow-y:auto;
+  height: 200px;
+  /*overflow-x:hidden;*/
+  /*overflow-y:scroll;*/
+}
+
+#userRouteDiv {
+  position: absolute;
+  top: 310px;
+  right: 0px;
+  overflow-y:auto;
+  height: 225px;
+}
+
+#checkinSubDiv {
+  padding: 10px;
+  background-color: rgba(0, 209, 255, 0.5);
+  margin: 10px;
+  border-radius: 5px;
+  /*border-color: #61dafb;*/
+  onclick : disabled
+}
+

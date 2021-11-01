@@ -1,0 +1,36 @@
+#canvas {
+  border-radius: 5px;
+  background-color: white;
+  padding: 20px;
+  /*float: right;*/
+  position: absolute;
+  top: 35px;
+  left: 250px
+}
+
+#colorCanvas {
+  border-radius: 5px;
+  background-color: white;
+}
+
+.toggleStreetSelect1, .toggleStreetSelect2 {
+  width: 200px;
+  color: black;
+  height: 30px;
+}
+
+#legendDiv {
+  border-radius: 5px;
+  position: absolute;
+  top: 50px;
+  right: 300px;
+  z-index: 1;
+  background-color: #282c34;
+  padding: 20px;
+  width: 120px;
+  color: #ffffff;
+}
+
+#legendTableDiv {
+  padding-top: 20px;
+}

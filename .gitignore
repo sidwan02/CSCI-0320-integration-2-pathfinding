@@ -1,0 +1,6 @@
+server/data/maps/maps.sqlite3
+target/
+.mvn-classpath
+.classpath
+.idea/
+**.DS_Store**
