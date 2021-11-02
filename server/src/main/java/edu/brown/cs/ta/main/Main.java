@@ -14,7 +14,6 @@ import java.util.function.BiFunction;
 import edu.brown.cs.ta.commandHandlers.pathfinding.MapCommandHandler;
 import edu.brown.cs.ta.commandHandlers.pathfinding.NearestCommandHandler;
 import edu.brown.cs.ta.commandHandlers.pathfinding.RouteCommandsHandler;
-import edu.brown.cs.ta.commandHandlers.pathfinding.WaysCommandHandler;
 import edu.brown.cs.ta.repl.Repl;
 import joptsimple.OptionParser;
 import joptsimple.OptionSet;
@@ -64,7 +63,6 @@ public final class Main {
     Map<String, BiFunction<String, String, String>> validCommands = new HashMap<>() {
       {
         put("map", MapCommandHandler::mapCommand);
-        put("ways", WaysCommandHandler::waysCommand);
         put("nearest", NearestCommandHandler::nearestCommand);
         put("route", RouteCommandsHandler::routeCommand);
       }
